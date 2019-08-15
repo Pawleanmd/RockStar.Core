@@ -5,6 +5,10 @@ VisualStudioVersion = 15.0.28307.421
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RockStar.Core", "RockStar.Core\RockStar.Core.csproj", "{862CA41D-A2FF-4FBD-9A49-798D3685B6F9}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RockStart.WebService", "RockStart.WebService\RockStart.WebService.csproj", "{D0FC931D-79D1-4D6E-94E5-83C096E5C873}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestApplication", "TestApplication\TestApplication.csproj", "{5F56B9EC-C0F0-4445-9BB4-82994D62FD44}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +19,14 @@ Global
 		{862CA41D-A2FF-4FBD-9A49-798D3685B6F9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{862CA41D-A2FF-4FBD-9A49-798D3685B6F9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{862CA41D-A2FF-4FBD-9A49-798D3685B6F9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D0FC931D-79D1-4D6E-94E5-83C096E5C873}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D0FC931D-79D1-4D6E-94E5-83C096E5C873}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D0FC931D-79D1-4D6E-94E5-83C096E5C873}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D0FC931D-79D1-4D6E-94E5-83C096E5C873}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5F56B9EC-C0F0-4445-9BB4-82994D62FD44}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5F56B9EC-C0F0-4445-9BB4-82994D62FD44}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5F56B9EC-C0F0-4445-9BB4-82994D62FD44}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5F56B9EC-C0F0-4445-9BB4-82994D62FD44}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
