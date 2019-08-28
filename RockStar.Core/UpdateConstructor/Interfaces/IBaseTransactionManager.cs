@@ -7,10 +7,11 @@ using System.Threading.Tasks;
 
 namespace RockStar.Core.UpdateConstructor.Interfaces
 {
-	public interface ITransactionManager: IBaseTransactionManager
+	public interface IBaseTransactionManager
 	{
-		IStepLog StartTransaction();
-		IStepLog StopTransaction();
-		IStepLog RollBackTransaction();
+		Queue<IStep> QueueToBeDone { get; }
+		Queue<IStep> QueueDone { get; }
+		bool IsRunning { get; }
+		CancellationTokenSource cts { get; }
 	}
 }

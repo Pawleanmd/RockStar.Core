@@ -134,7 +134,7 @@ namespace RockStar.Core.UpdateConstructor.Steps
 
 		public IStepLog Backup()
 		{
-			IStepLog logM = BackupFile(FileName, DestinationDirectory, BackupDirectory);
+			IStepLog logM = BackupFile(FileName, SourceDirectory, BackupDirectory);
 			return logM;
 		}
 	}

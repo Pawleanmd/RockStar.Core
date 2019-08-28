@@ -13,11 +13,11 @@ namespace RockStar.Core.Logger
 
 		public static void Log(string message)
 		{
-			Action.Invoke(message);
+			Action?.Invoke(message);
 		}
 		public static void Log(LogMessage message)
 		{
-			Action.Invoke($"State: {message.IsSuccess}, Message: {message.Message}");
+			Action?.Invoke($"State: {message.IsSuccess}, Message: {message.Message}");
 		}
 
 	}

@@ -9,13 +9,13 @@ using RockStar.Core.UpdateConstructor.Interfaces;
 
 namespace RockStar.Core.UpdateConstructor
 {
-	public class Rick137:ITransactionManager
+	public class Rick137:ITransactionManager,IAsyncTransactionManager
 	{ 
 		#region Properties
 
 		public Queue<IStep> QueueToBeDone { get;  }
 		public Queue<IStep> QueueDone { get; }
-		public bool IsRunning { get;  }
+		public bool IsRunning { get; private set; }
 		public CancellationTokenSource cts { get; }
 
 		private string BackupFolder { get; set; }
@@ -35,6 +35,13 @@ namespace RockStar.Core.UpdateConstructor
 
 		#endregion
 
+		public void EnqueueRange(IEnumerable<IStep> steps)
+		{
+			foreach (var s in steps)
+			{
+				Enqueue(s);
+			}
+		}
 
 		public void Enqueue(IStep step)
 		{
@@ -44,15 +51,40 @@ namespace RockStar.Core.UpdateConstructor
 			Loggmanager.Log("=========Step Enqueue has been added");
 		}
 
-		/// <summary>
-		/// Starts and if fails rollback
-		/// </summary>
-		public async Task<IStepLog> StartTransaction()
+	
+		public IStepLog StartTransaction()
+		{
+			var result = Start();
+			if (!result.IsSuccess)
+			{
+				result = RollBack();
+			}
+			return result;
+		}
+
+		public IStepLog StopTransaction()
+		{
+			cts.Cancel();
+			var result = RollBack();
+			return result;
+		}
+
+		public IStepLog RollBackTransaction()
+		{
+			var result = RollBack();
+			return result;
+		}
+
+
+		//Implementation of async transaction manager
+		#region Async wrapper
+
+		public async Task<IStepLog> StartTransactionAsync()
 		{
 			var result = await StartAsync();
 			if (!result.IsSuccess)
 			{
-				result = await RollBackAsync();				
+				result = await RollBackAsync();
 			}
 			Loggmanager.Log(result.Message);
 			return result;
@@ -61,7 +93,7 @@ namespace RockStar.Core.UpdateConstructor
 		/// <summary>
 		/// Stops with rollback
 		/// </summary>
-		public async Task<IStepLog> StopTransaction()
+		public async Task<IStepLog> StopTransactionAsync()
 		{
 			cts.Cancel();
 			var result = await RollBackAsync();
@@ -72,72 +104,91 @@ namespace RockStar.Core.UpdateConstructor
 		/// <summary>
 		/// Rollback
 		/// </summary>
-		public async Task<IStepLog> RollBackTransaction()
+		public async Task<IStepLog> RollBackTransactionAsync()
 		{
 			var result = await RollBackAsync();
 			Loggmanager.Log(result.Message);
 			return result;
 		}
 
+		#endregion
+
 
 		#region Private emethods
 
+		//Core methods
+		#region Main
+
+		private IStepLog Start()
+		{			
+			IStepLog logM = new LogMessage() { IsSuccess = true, Message = $"Transaction finished with success" };
+			IsRunning = true;
+			while (QueueToBeDone.Count != 0)
+			{
+				if (cts.IsCancellationRequested)
+				{
+					QueueToBeDone.Clear();
+					logM = new LogMessage() { IsSuccess = false, Message = "Transaction cancelled by user" };
+					break;
+				}
+				//
+				var item = QueueToBeDone.Dequeue();
+				var backuped = item.Backup();
+				if (!backuped.IsSuccess)
+				{
+					logM = backuped;
+					break;
+				}
+				var done = item.Do();
+				if (!done.IsSuccess)
+				{
+					logM = done;
+					break;
+				}
+			}
+			IsRunning = false;
+			//
+			return logM;
+		}
+		private IStepLog RollBack()
+		{
+			IsRunning = true;
+			LogMessage logM = new LogMessage() { IsSuccess = true, Message = $"rollback step has finished with success" };
+			while (QueueDone.Count != 0)
+			{
+				var item = QueueDone.Dequeue();
+				var rollbackResult = item.RollBack();
+				if (!rollbackResult.IsSuccess)
+				{
+					logM = new LogMessage() { IsSuccess = false, Message = $"rollback step has failed. Message: {rollbackResult.Message} " };
+					break;
+				}
+			}
+			IsRunning = false;
+			return logM;
+		}
+
+
+		#endregion
+
+		//Async implementation of private core methods
+		#region Async Wrapper
+
 		private async Task<IStepLog> StartAsync()
 		{
-			IStepLog logM = new LogMessage() { IsSuccess = true, Message = "Transaction finished with success" };
-			var task = new TaskFactory().StartNew<IStepLog>(() =>
-			{
-				IsRunning = true;
-				while (QueueToBeDone.Count != 0)
-				{
-					if (cts.IsCancellationRequested)
-					{
-						QueueToBeDone.Clear();
-						logM = new LogMessage() { IsSuccess = false, Message = "Transaction cancelled by user" };
-						break;
-					}
-					//
-					var item = QueueToBeDone.Dequeue();
-					var backuped = item.Backup();
-					if (!backuped.IsSuccess)
-					{
-						logM = backuped;
-						break;
-					}
-					var done = item.Do();
-					if (!done.IsSuccess)
-					{
-						logM = done;
-						break;
-					}
-				}
-				IsRunning = false;
-				return logM;
-			});
+			var task = new TaskFactory().StartNew<IStepLog>(() => { return Start(); });
 			return task.Result;
 		}
 
 		private async Task<IStepLog> RollBackAsync()
 		{
-			var task = new TaskFactory().StartNew<IStepLog>(() =>
-			{
-				IsRunning = true;
-				LogMessage logM = new LogMessage() { IsSuccess = true, Message = $"rollback step has finished with success" };
-				while (QueueDone.Count != 0)
-				{
-					var item = QueueDone.Dequeue();
-					var rollbackResult = item.RollBack();
-					if (!rollbackResult.IsSuccess)
-					{
-						logM = new LogMessage() { IsSuccess = false, Message = $"rollback step has failed. Message: {rollbackResult.Message} " };
-						break;
-					}		
-				}
-				IsRunning = false;
-				return logM;
-			});
+			var task = new TaskFactory().StartNew<IStepLog>(() => { return RollBack(); });
 			return task.Result;
 		}
+
+	
+
+		#endregion
 
 		#endregion
 	}
