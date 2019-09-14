@@ -43,7 +43,6 @@
   <ItemGroup>
     <Compile Include="Logger\Loggmanager.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="UpdateConstructor\CopyDirectoryStep.cs" />
     <Compile Include="UpdateConstructor\Interfaces\IAsyncTransactionManager.cs" />
     <Compile Include="UpdateConstructor\Interfaces\IBaseTransactionManager.cs" />
     <Compile Include="UpdateConstructor\Interfaces\ITransactionManager.cs" />
@@ -52,13 +51,8 @@
     <Compile Include="UpdateConstructor\Interfaces\IStepLog.cs" />
     <Compile Include="UpdateConstructor\LogMessage.cs" />
     <Compile Include="UpdateConstructor\Steps\CreateDirectory.cs" />
-    <Compile Include="UpdateConstructor\Steps\RemoteCopyStep.cs" />
-    <Compile Include="UpdateConstructor\Steps\RemoveStep.cs" />
     <Compile Include="UpdateConstructor\Steps\ReplaceFileStep.cs" />
-    <Compile Include="UpdateConstructor\Steps\RestartStep.cs" />
     <Compile Include="UpdateConstructor\Rick137.cs" />
-    <Compile Include="UpdateConstructor\Steps\StartStep.cs" />
-    <Compile Include="UpdateConstructor\Steps\StopStep.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

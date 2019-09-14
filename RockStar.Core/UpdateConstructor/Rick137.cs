@@ -90,9 +90,6 @@ namespace RockStar.Core.UpdateConstructor
 			return result;
 		}
 
-		/// <summary>
-		/// Stops with rollback
-		/// </summary>
 		public async Task<IStepLog> StopTransactionAsync()
 		{
 			cts.Cancel();
@@ -101,9 +98,6 @@ namespace RockStar.Core.UpdateConstructor
 			return result;
 		}
 
-		/// <summary>
-		/// Rollback
-		/// </summary>
 		public async Task<IStepLog> RollBackTransactionAsync()
 		{
 			var result = await RollBackAsync();
@@ -114,7 +108,7 @@ namespace RockStar.Core.UpdateConstructor
 		#endregion
 
 
-		#region Private emethods
+		#region Private methods
 
 		//Core methods
 		#region Main
@@ -168,7 +162,6 @@ namespace RockStar.Core.UpdateConstructor
 			return logM;
 		}
 
-
 		#endregion
 
 		//Async implementation of private core methods
@@ -185,8 +178,6 @@ namespace RockStar.Core.UpdateConstructor
 			var task = new TaskFactory().StartNew<IStepLog>(() => { return RollBack(); });
 			return task.Result;
 		}
-
-	
 
 		#endregion
 

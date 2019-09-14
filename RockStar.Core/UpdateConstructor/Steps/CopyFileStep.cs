@@ -9,6 +9,7 @@ using RockStar.Core.UpdateConstructor.Interfaces;
 
 namespace RockStar.Core.UpdateConstructor.Steps
 {
+	[Obsolete("Not usable")]
 	public class CopyFileStep : IStep
 	{
 		#region Properties
