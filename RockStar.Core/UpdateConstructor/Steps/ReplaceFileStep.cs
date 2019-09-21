@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -24,22 +25,18 @@ namespace RockStar.Core.UpdateConstructor.Steps
 		private string FileName { get; set; }
 		private string SourceDirectory { get; set; }
 		private string DestinationDirectory { get; set; }
-		public string BackupDirectory { get; set; }
-
-		private string FullTargetPath { get; set; }
-		private string FullFilePath { get; set; }
+		private string BackupDirectory { get; set; }
 
 		#endregion
 
 		#region Constructors
 
-		public ReplaceFileStep(string fileName, string sourceDirectory, string destinationDirectory)
+		public ReplaceFileStep(string sourceFileName, string sourceDirectory, string destinationDirectory,string backupDirectory)
 		{
-			Loggmanager.Log("Replace instance is creating");
-			FileName = fileName;
+			FileName = sourceFileName;
 			SourceDirectory = sourceDirectory;
 			DestinationDirectory = destinationDirectory;
-			Loggmanager.Log("Replace instance is created");
+			BackupDirectory = backupDirectory;		
 		}
 
 		#endregion
@@ -47,48 +44,28 @@ namespace RockStar.Core.UpdateConstructor.Steps
 		#region Private methods
 
 		private LogMessage ReplaceFile(string fileName, string sourceDirectory, string destinationDirectory)
-		{		
-			try
+		{				
+			if (!Directory.Exists(sourceDirectory))
 			{
-				Loggmanager.Log($"REPLACING started the file: {Path.Combine(sourceDirectory, fileName)} to: {Path.Combine(destinationDirectory, fileName)} directory");
-				if (!Directory.Exists(sourceDirectory))
-				{
-					LogMessage l = new LogMessage();
-					l.IsSuccess = false;
-					l.Message = $"Directory for copying :{sourceDirectory} is not exists";
-					return l;
-				}
-				//
-				FullFilePath = Path.Combine(sourceDirectory, fileName);
-				if (!File.Exists(FullFilePath))
-				{
-					LogMessage l = new LogMessage();
-					l.IsSuccess = false;
-					l.Message = $"File for copying :{FullFilePath} is not exists";
-					return l;
-				}
-				//
-				if (!Directory.Exists(destinationDirectory))
-				{
-					LogMessage l = new LogMessage();
-					l.IsSuccess = false;
-					l.Message = $"Cant create inexistent folder :{destinationDirectory} is not exists";
-					return l;
-				}
-				FullTargetPath = Path.Combine(destinationDirectory, fileName);
-				File.Copy(FullFilePath, FullTargetPath, true);
-				Loggmanager.Log($"REPLACING ended the file: {Path.Combine(sourceDirectory, fileName)} to: {Path.Combine(destinationDirectory, fileName)} directory");
-				//
-				return new LogMessage() { IsSuccess = true };
+				throw new DirectoryNotFoundException($"Directory for copying :{sourceDirectory} is not exists");
 			}
-			catch (Exception ex)
+			//
+			string fullFilePath = Path.Combine(sourceDirectory, fileName);
+			if (!File.Exists(fullFilePath))
 			{
-				LogMessage l = new LogMessage();
-				l.IsSuccess = false;
-				l.Message = $"Exception while : {ex.Message}, Internal exception: {ex.InnerException?.Message}";
-				//
-				return l;
+				throw new FileNotFoundException($"File for copying :{fullFilePath} is not exists");
 			}
+			//
+			if (!Directory.Exists(destinationDirectory))
+			{
+				throw new DirectoryNotFoundException($"Cant create inexistent folder :{destinationDirectory} is not exists");
+			}
+			//
+			string fullTargetPath = Path.Combine(destinationDirectory, fileName);
+			File.Copy(fullFilePath, fullTargetPath, true);
+
+			//
+			return new LogMessage() { IsSuccess = true };
 		}
 
 		private LogMessage BackupFile(string fileName, string sourceDirectory, string destinationDirectory)
@@ -97,22 +74,18 @@ namespace RockStar.Core.UpdateConstructor.Steps
 			{
 				Directory.CreateDirectory(BackupDirectory);
 			}
-			Loggmanager.Log($"==BACKUP the file:{Path.Combine(sourceDirectory, fileName)} to: {Path.Combine(destinationDirectory, fileName)} directory");
-			var result = ReplaceFile(fileName, sourceDirectory, BackupDirectory);
+			var result = ReplaceFile(fileName, destinationDirectory, BackupDirectory);
 			Loggmanager.Log(result);
-			Loggmanager.Log($"==BACKUP file :{Path.Combine(sourceDirectory, fileName)} to: {Path.Combine(destinationDirectory, fileName)} directory has been completed with state: {result.IsSuccess}, Message: {result.Message}");
 			//
 			return result;
 		}
 
 		private LogMessage RollBackFile(string fileName, string backupDirectory, string targetDirectory)
 		{
-			Loggmanager.Log($"========== ROLLBACK the file:{Path.Combine(backupDirectory, fileName)} to: {Path.Combine(targetDirectory, fileName)} directory");
-			var result = ReplaceFile(fileName, backupDirectory, targetDirectory);
-			//
 			
+			var result = ReplaceFile(fileName, backupDirectory, targetDirectory);
+			//			
 			Loggmanager.Log(result);
-			Loggmanager.Log($"========== ROLLBACK the file:{Path.Combine(backupDirectory, fileName)} to: {Path.Combine(targetDirectory, fileName)} directory");
 			//
 			return result;
 		}
@@ -134,7 +107,7 @@ namespace RockStar.Core.UpdateConstructor.Steps
 
 		public IStepLog Backup()
 		{
-			IStepLog logM = BackupFile(FileName, SourceDirectory, BackupDirectory);
+			IStepLog logM = BackupFile(FileName, DestinationDirectory, BackupDirectory);
 			return logM;
 		}
 	}

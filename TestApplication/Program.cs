@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -20,14 +21,14 @@ namespace TestApplication
 		{
 			//Создаю объект для копирования. Он включает копирование содержимого папки. Папки и файлы.
 			//В этом объекте я указываю директорию для бэкапа.
-			
-			Rick137 Rick = new Rick137();
+						
 			Loggmanager.Action = Console.WriteLine;
-			string path = "C:\\Alexei\\TaxiServices\\TaxiService1\\Local";
-			//DirSearch(path);
-			var steps = GetStepsFromDirectory(path, "C:\\test");
+			string sourcePath = @"D:\UpdateSlave\updatesfolder";
+			string targetPath = @"D:\UpdateSlave\serverfolder";
+			string backupPath = @"D:\UpdateSlave\backupdirectory";
+			Rick137 Rick = new Rick137(backupPath);
+			Rick.Enqueue(sourcePath, targetPath);
 
-			Rick.EnqueueRange(steps);
 			Stopwatch s = Stopwatch.StartNew();
 			Thread t = new Thread(async () =>
 			{
@@ -38,24 +39,25 @@ namespace TestApplication
 			Console.ReadLine();
 		}
 	
-		public static List<IStep> GetStepsFromDirectory(string sourceDirectory, string destinationDirectory)
+		public static List<IStep> GetStepsFromDirectory(string sourceDirectory, string destinationDirectory,string backupDirectory)
 		{
 			List<IStep> stepListToInsert = new List<IStep>();
 			//
-			foreach (var f in Directory.GetFiles(sourceDirectory))
+			foreach (string filePath in Directory.GetFiles(sourceDirectory))
 			{
-				string fileName = Path.GetFileName(f);
-				string directory = Path.GetDirectoryName(f);
-				ReplaceFileStep rfs = new ReplaceFileStep(fileName, directory, destinationDirectory);
+				string sourceFileName = Path.GetFileName(filePath);
+				ReplaceFileStep rfs = new ReplaceFileStep(sourceFileName, sourceDirectory, destinationDirectory, backupDirectory);
 				//
 				stepListToInsert.Add(rfs);
 			}
 			foreach (var d in Directory.GetDirectories(sourceDirectory))
-			{				
-				string[] parts = d.Split('\\');
-				CreateDirectoryStep cds = new CreateDirectoryStep(parts.Last(), destinationDirectory);
-				stepListToInsert.Add(cds);
-				var tempList = GetStepsFromDirectory(d, Path.Combine(destinationDirectory,d));
+			{
+				string directoryName = d.Split('\\').LastOrDefault();
+				destinationDirectory = Path.Combine(destinationDirectory, directoryName);
+				backupDirectory = Path.Combine(backupDirectory, directoryName);
+				CreateDirectoryStep cds = new CreateDirectoryStep(directoryName, destinationDirectory, backupDirectory);
+				stepListToInsert.Add(cds);				
+				var tempList = GetStepsFromDirectory(d, destinationDirectory, backupDirectory);
 				stepListToInsert.AddRange(tempList);
 			}
 			//

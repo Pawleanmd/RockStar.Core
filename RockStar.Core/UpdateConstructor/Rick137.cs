@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using RockStar.Core.Logger;
 using RockStar.Core.UpdateConstructor.Interfaces;
+using RockStar.Core.UpdateConstructor.Steps;
 
 namespace RockStar.Core.UpdateConstructor
 {
@@ -17,20 +19,20 @@ namespace RockStar.Core.UpdateConstructor
 		public Queue<IStep> QueueDone { get; }
 		public bool IsRunning { get; private set; }
 		public CancellationTokenSource cts { get; }
-
-		private string BackupFolder { get; set; }
+		public string BackupFolder { get; private set; }
+		private string CurrentTransactionBackupFolder { get; set; }
 
 		#endregion
 
 
 		#region Constructor
 
-		public Rick137()
+		public Rick137(string backupRootFolder)
 		{
 			cts = new CancellationTokenSource();
 			QueueToBeDone = new Queue<IStep>();
 			QueueDone = new Queue<IStep>();
-			BackupFolder = "C:\\TempFolderForBackup";
+			BackupFolder = backupRootFolder;
 		}
 
 		#endregion
@@ -45,13 +47,22 @@ namespace RockStar.Core.UpdateConstructor
 
 		public void Enqueue(IStep step)
 		{
-			step.BackupDirectory = BackupFolder;
 			if (!IsRunning)
 				QueueToBeDone.Enqueue(step);
 			Loggmanager.Log("=========Step Enqueue has been added");
 		}
 
-	
+		public void Enqueue(string sourceDirectory, string destinationDirectory)
+		{
+			string currentDate = DateTime.Now.ToString("HH.mm.ss_dd.MM.yyyy");
+			string backupDirectoryName = $"{Guid.NewGuid().ToString()}_{currentDate}";
+			string backupDirectorypath = Path.Combine(BackupFolder, backupDirectoryName);
+			var steps = GetStepsFromDirectory(sourceDirectory, destinationDirectory, backupDirectorypath);
+			
+			this.EnqueueRange(steps);
+		}
+
+
 		public IStepLog StartTransaction()
 		{
 			var result = Start();
@@ -114,36 +125,51 @@ namespace RockStar.Core.UpdateConstructor
 		#region Main
 
 		private IStepLog Start()
-		{			
-			IStepLog logM = new LogMessage() { IsSuccess = true, Message = $"Transaction finished with success" };
-			IsRunning = true;
-			while (QueueToBeDone.Count != 0)
+		{
+			try
 			{
-				if (cts.IsCancellationRequested)
+				IStepLog logM = new LogMessage() {IsSuccess = true, Message = $"Transaction finished with success"};
+				IsRunning = true;
+				int a = 0;
+				while (QueueToBeDone.Count != 0)
 				{
-					QueueToBeDone.Clear();
-					logM = new LogMessage() { IsSuccess = false, Message = "Transaction cancelled by user" };
-					break;
+					if (a == 8)
+						throw new Exception();
+					if (cts.IsCancellationRequested)
+					{
+						QueueToBeDone.Clear();
+						throw new Exception($"Transaction cancelled by user");
+					}
+
+					//
+					var item = QueueToBeDone.Dequeue();
+					var backuped = item.Backup();
+					if (!backuped.IsSuccess)
+					{
+						logM = backuped;
+						break;
+					}
+
+					var done = item.Do();
+					if (!done.IsSuccess)
+					{
+						logM = done;
+						break;
+					}
+					QueueDone.Enqueue(item);
 				}
+
+				IsRunning = false;
 				//
-				var item = QueueToBeDone.Dequeue();
-				var backuped = item.Backup();
-				if (!backuped.IsSuccess)
-				{
-					logM = backuped;
-					break;
-				}
-				var done = item.Do();
-				if (!done.IsSuccess)
-				{
-					logM = done;
-					break;
-				}
+				return logM;
 			}
-			IsRunning = false;
-			//
-			return logM;
-		}
+			catch (Exception ex)
+			{
+				IStepLog logM = new LogMessage() { IsSuccess = false, Message = $"{ex.Message}" };
+				return logM;
+			}			
+		}		
+
 		private IStepLog RollBack()
 		{
 			IsRunning = true;
@@ -180,6 +206,31 @@ namespace RockStar.Core.UpdateConstructor
 		}
 
 		#endregion
+
+		private List<IStep> GetStepsFromDirectory(string sourceDirectory, string destinationDirectory, string backupDirectory)
+		{
+			List<IStep> stepListToInsert = new List<IStep>();
+			//		
+			foreach (string filePath in Directory.GetFiles(sourceDirectory))
+			{
+				string sourceFileName = Path.GetFileName(filePath);
+				ReplaceFileStep rfs = new ReplaceFileStep(sourceFileName, sourceDirectory, destinationDirectory, backupDirectory);
+				//
+				stepListToInsert.Add(rfs);
+			}
+			foreach (var d in Directory.GetDirectories(sourceDirectory))
+			{
+				string directoryName = d.Split('\\').LastOrDefault();
+				CreateDirectoryStep cds = new CreateDirectoryStep(directoryName, destinationDirectory, backupDirectory);
+				destinationDirectory = Path.Combine(destinationDirectory, directoryName);
+				backupDirectory = Path.Combine(backupDirectory, directoryName);
+				stepListToInsert.Add(cds);
+				var tempList = GetStepsFromDirectory(d, destinationDirectory, backupDirectory);
+				stepListToInsert.AddRange(tempList);
+			}
+			//
+			return stepListToInsert;
+		}
 
 		#endregion
 	}

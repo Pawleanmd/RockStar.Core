@@ -21,22 +21,24 @@ namespace RockStar.Core.UpdateConstructor.Steps
 
 		#region Constructors
 
-		public CreateDirectoryStep(string directoryName, string destinationDirectory)
+		public CreateDirectoryStep(string directoryName, string destinationDirectory,string backupDirectory)
 		{
 			DirectoryName = directoryName;
 			DestinationDirectory = destinationDirectory;
+			BackupDirectory = backupDirectory;
 		}
 
 		#endregion
 
 
 		public IStepLog Backup()
-		{
+		{			
 			return new LogMessage() { IsSuccess = true };
 		}
 
 		public IStepLog Do()
 		{
+			throw new Exception("Vasyan");
 			IStepLog logM = CreateDirectory(DirectoryName, DestinationDirectory);
 			return logM;
 		}
@@ -48,19 +50,10 @@ namespace RockStar.Core.UpdateConstructor.Steps
 
 		private LogMessage CreateDirectory(string directoryname, string destinationPath)
 		{
-			if (!Directory.Exists(destinationPath))
-			{
-				return new LogMessage() {IsSuccess = false, Message = $"Target directory: {DestinationDirectory} is not exists"};
-			}
-			try
-			{
-				Directory.CreateDirectory(Path.Combine(destinationPath, directoryname));
-				return new LogMessage() { IsSuccess = true, Message = $"Directory: {Path.Combine(destinationPath, directoryname)} was created" };
-			}
-			catch (Exception ex)
-			{
-				return new LogMessage() { IsSuccess = false, Message = $"Directory: {Path.Combine(destinationPath, directoryname)} creation was ended with exception: {ex.Message}" };
-			}			
+			string fullDirectoryName = Path.Combine(BackupDirectory, DirectoryName);
+			Directory.CreateDirectory(fullDirectoryName);
+
+			return new LogMessage() { IsSuccess = true, Message = $"Directory: {Path.Combine(destinationPath, directoryname)} was created" };			
 		}
 	}
 }

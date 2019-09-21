@@ -8,7 +8,6 @@ namespace RockStar.Core.UpdateConstructor.Interfaces
 {
 	public interface IStep
 	{
-		string BackupDirectory { get; set; }
 		IStepLog Backup();
 		IStepLog Do();
 		IStepLog RollBack();
